@@ -38,7 +38,10 @@
 ;; See the cmd-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn cmd [msg])
+(defn cmd [msg]
+  (if msg
+    (first (words msg))
+    nil))
 
 ;; Asgn 1.
 ;;
@@ -50,7 +53,13 @@
 ;; See the args-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn args [msg])
+(defn args [msg]
+  (if msg
+    (drop 1 (words msg))
+    []))
+
+
+
 
 ;; Asgn 1.
 ;;
@@ -64,7 +73,8 @@
 ;; See the parsed-msg-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn parsed-msg [msg])
+(defn parsed-msg [msg]
+  (hash-map :cmd (cmd msg), :args (args msg)))
 
 ;; Asgn 1.
 ;;
@@ -78,7 +88,10 @@
 ;; See the welcome-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn welcome [pmsg])
+(defn welcome [pmsg]
+  (str "Welcome " (first (get pmsg :args))))
+
+
 
 ;; Asgn 1.
 ;;
@@ -88,7 +101,8 @@
 ;; See the homepage-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn homepage [_])
+(defn homepage [_]
+  cs4278-brightspace)
 
 
 ;; Asgn 1.
@@ -101,7 +115,15 @@
 ;; See the format-hour-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn format-hour [h])
+(defn format-hour [h]
+  (cond
+    (= h 0) (str 12 "am")
+    (= h 12)(str 12 "pm")
+    (> h 12) (str (- h 12) "pm")
+    :else (str h "am")))
+
+
+
 
 ;; Asgn 1.
 ;;
@@ -118,7 +140,8 @@
 ;; See the formatted-hours-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn formatted-hours [hours])
+(defn formatted-hours [hours]
+  (str "from " (format-hour (get hours :start)) " to " (format-hour (get hours :end)) " in " (get hours :location)))
 
 ;; Asgn 1.
 ;;
@@ -135,7 +158,11 @@
 ;; See the office-hours-for-day-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn office-hours [{:keys [args cmd]}])
+(defn office-hours [{:keys [args cmd]}]
+  (if (= (.indexOf (keys instructor-hours) (first args)) -1)
+    (str "there are no " cmd " hours on that day")
+    (formatted-hours (get instructor-hours (first args)))))
+
 
 ;; Asgn 2.
 ;;
@@ -146,7 +173,8 @@
 ;; The map should also have the key :action bound to the value
 ;; :send.
 ;;
-(defn action-send-msg [to msg])
+(defn action-send-msg [to msg]
+  {:to to, :msg msg, :action :send})
 
 ;; Asgn 2.
 ;;
@@ -163,7 +191,8 @@
 ;;   output.add( action-send-msg(person, msg) )
 ;; return output
 ;;
-(defn action-send-msgs [people msg])
+(defn action-send-msgs [people msg]
+  (map #(action-send-msg % msg) people))
 
 ;; Asgn 2.
 ;;
@@ -175,7 +204,8 @@
 ;; The map should also have the key :action bound to the value
 ;; :assoc-in.
 ;;
-(defn action-insert [ks v])
+(defn action-insert [ks v]
+  {:action :assoc-in :ks ks :v v})
 
 ;; Asgn 2.
 ;;
@@ -198,7 +228,9 @@
 ;;  (action-insert [:foo :bar :b] 32)
 ;;  (action-insert [:foo :bar :c] 32)]
 ;;
-(defn action-inserts [prefix ks v])
+(defn action-inserts [prefix ks v]
+  (into [] (map (fn [a] (action-insert (conj prefix a) v)) ks)))
+
 
 ;; Asgn 2.
 ;;
@@ -208,7 +240,8 @@
 ;; The map should also have the key :action bound to the value
 ;; :dissoc-in.
 ;;
-(defn action-remove [ks])
+(defn action-remove [ks]
+  {:action :dissoc-in, :ks ks})
 
 ;; Asgn 3.
 ;;
@@ -227,7 +260,8 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn experts-register [experts topic id info])
+(defn experts-register [experts topic id info]
+  (action-insert [:expert topic id] info))
 
 ;; Asgn 3.
 ;;
@@ -245,7 +279,8 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn experts-unregister [experts topic id])
+(defn experts-unregister [experts topic id]
+  (action-remove [:experts topic id]))
 
 (defn experts-question-msg [experts question-words]
   (str "Asking " (count experts) " expert(s) for an answer to: \""
@@ -310,7 +345,20 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn ask-experts [experts {:keys [args user-id]}])
+(defn ask-experts [experts {:keys [args user-id]}]
+  (if (< (count args) 2)
+    [[] "You must ask a valid question."]
+    (if (= 0 (count experts))
+      [[] "There are no experts on that topic."]
+      [(into [] (concat (action-inserts [:conversations] experts user-id)
+                        (action-send-msgs experts (string/join " " (rest args)))))
+       (experts-question-msg experts (rest args))])))
+
+
+
+
+
+
 
 ;; Asgn 3.
 ;;
@@ -369,7 +417,14 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn answer-question [conversation {:keys [args]}])
+(defn answer-question [conversation {:keys [args]}]
+  (if (= (count args) 0)
+    [[] "You did not provide an answer."]
+    (if (not(nil? conversation))
+      [[(action-send-msg conversation (string/join " " args))]
+       "Your answer was sent."]
+      [[] "You haven't been asked a question."])))
+
 
 ;; Asgn 3.
 ;;
@@ -409,7 +464,11 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn add-expert [experts {:keys [args user-id]}])
+(defn add-expert [experts {:keys [args user-id]}]
+  [[(experts-register experts (first args) user-id {})]
+   (str user-id " is now an expert on " (first args) ".")])
+
+
 
 ;; Don't edit!
 (defn stateless [f]
@@ -420,7 +479,10 @@
 (def routes {"default"  (stateless (fn [& args] "Unknown command."))
              "welcome"  (stateless welcome)
              "homepage" (stateless homepage)
-             "office"   (stateless office-hours)})
+             "office"   (stateless office-hours)
+             "ask" ask-experts
+             "answer" answer-question
+             "expert" add-expert})
 ;; Asgn 3.
 ;;
 ;; @Todo: Add mappings of the cmds "expert", "ask", and "answer" to
@@ -477,7 +539,10 @@
 ;; See the create-router-test in test/asgnx/core_test.clj for the
 ;; complete specification.
 ;;
-(defn create-router [routes])
+(defn create-router [routes] (fn [msg]
+                               (if (get routes (get msg :cmd))
+                                 (get routes (get msg :cmd))
+                                 (get routes "default"))))
 
 ;; Don't edit!
 (defn output [o]

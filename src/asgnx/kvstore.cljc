@@ -32,7 +32,12 @@
 ;;
 ;; See the tests in asgnx.kvstore-test for a complete spec.
 ;;
-(defn state-put [m ks v])
+
+;; @InspiredBy
+;; @Source: https://mail.google.com/mail/u/1/#inbox/165ac52ce5871b6a
+(defn state-put [m ks v]
+  (assoc-in m ks v))
+;; @EndInspiredBy
 
 ;; Asgn 2
 ;;
@@ -49,7 +54,22 @@
 ;;
 ;; See the tests in asgnx.kvstore-test for a complete spec.
 ;;
-(defn state-remove [m ks])
+
+;; @FoundCode
+;; @Source: https://stackoverflow.com/questions/14488150/how-to-write-a-dissoc-in-command-for-clojure
+(defn state-remove [m ks]
+  (if-let [[k & ks] (seq ks)]
+    (if (seq ks)
+      (let [v (state-remove (get m k) ks)]
+        (if (empty? v)
+          (dissoc m k)
+          (assoc m k v)))
+      (dissoc m k))
+    m))
+;; @EndFoundCode
+
+
+
 
 ;; Asgn 2
 ;;
@@ -70,8 +90,11 @@
 ;;
 ;; See the tests in asgnx.kvstore-test for a complete spec.
 ;;
-(defn state-get [& args]) ;; Change the signature!
-
+;; @InspiredBy
+;; @Source: https://stackoverflow.com/questions/28091305/find-value-of-specific-key-in-nested-map
+(defn state-get [m k]
+  (get-in m k))
+;; @EndInspiredBy
 
 ;; Asgn 2
 ;;
@@ -88,7 +111,8 @@
 ;;
 ;; See the tests in asgnx.kvstore-test for a complete spec.
 ;;
-(defn state-keys [m ks])
+(defn state-keys [m ks]
+  (keys (state-get m ks)))
 
 
 ;; An in-memory store that mimics the side-effect based stores
