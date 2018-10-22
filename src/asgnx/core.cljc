@@ -260,8 +260,8 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn experts-register [experts topic id info]
-  (action-insert [:expert topic id] info))
+(defn students-register [students topic id info]
+  (action-insert [:student topic id] info))
 
 ;; Asgn 3.
 ;;
@@ -279,8 +279,8 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn experts-unregister [experts topic id]
-  (action-remove [:experts topic id]))
+(defn students-unregister [students topic id]
+  (action-remove [:students topic id]))
 
 (defn experts-question-msg [experts question-words]
   (str "Asking " (count experts) " expert(s) for an answer to: \""
@@ -464,8 +464,8 @@
 ;; See the integration test in See handle-message-test for the
 ;; expectations on how your code operates
 ;;
-(defn add-expert [experts {:keys [args user-id]}]
-  [[(experts-register experts (first args) user-id {})]
+(defn add-student [students {:keys [args user-id]}]
+  [[(students-register students (first args) user-id {})]
    (str user-id " is now an expert on " (first args) ".")])
 
 
@@ -482,7 +482,7 @@
              "office"   (stateless office-hours)
              "ask" ask-experts
              "answer" answer-question
-             "expert" add-expert})
+             "student" add-student})
 ;; Asgn 3.
 ;;
 ;; @Todo: Add mappings of the cmds "expert", "ask", and "answer" to
